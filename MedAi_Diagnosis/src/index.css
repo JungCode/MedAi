@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: "Inter", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 15px;
+  margin: 0px;
+  padding: 0px;
+}
+
+#typewriter {
+  font-size: 2rem; /* Chỉnh sửa kích thước chữ */
+  font-family: "Arial", sans-serif; /* Bạn có thể thay đổi font nếu cần */
+  color: white; /* Màu chữ */
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+  from {
+    transform: translateY(20px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+.fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
