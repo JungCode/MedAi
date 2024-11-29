@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Chatbox from "../components/Chatbot/Chatbox";
 import UserText from "../components/Chatbot/UserText";
 import ChatText from "../components/Chatbot/ChatText";
-import { getDoctorAdvice, prepareData } from "../api";
+import { getDoctorAdvice, prepareUserProfile } from "../api";
 
 interface Message {
   message: string;
@@ -70,12 +70,12 @@ const Chatbot = () => {
     const heartRate = localStorage.getItem("Heart Rate");
     const bloodSugar = localStorage.getItem("Blood Sugar");
 
-    const medicalHistory = localStorage.getItem("MedicalHistory");
+    const medicalHistory = localStorage.getItem("Medical History");
     const medicalHistoryArray = medicalHistory
       ? JSON.parse(medicalHistory)
       : [];
     const medicalHistoryString = medicalHistoryArray.join(", ");
-    prepareData(
+    prepareUserProfile(
       `For context, my height is ${height} cm, weight is ${weight} kg, and I have a ${medicalHistoryString} medical history. My current blood pressure is ${bloodPressure} mmHg, heart rate is ${heartRate} bpm, and blood sugar is ${bloodSugar} mg/dL.`
     );
   }, []);

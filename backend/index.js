@@ -15,6 +15,9 @@ const openai = new OpenAI({
   apiKey: "lm-studio", // Replace with your actual API key
 });
 
+// Store user-specific personalInfo globally
+let personalInfo = "";
+
 // System message to guide the AI
 const systemMessage = {
   role: "system",
@@ -27,17 +30,33 @@ const systemMessage = {
   Always differentiate personal health inquiries from general knowledge questions, tailoring your response to the user's context.`,
 };
 
+// Helper function to classify query type
+const classifyQueryType = (input) => {
+  const symptomKeywords = /(pain|fever|cough|rash|nausea|ache|symptom|diagnose|treatment|health issue|medicine)/i;
+  const knowledgeKeywords = /(how|why|what|explain|biology|science|function|process)/i;
+
+  if (symptomKeywords.test(input)) {
+    return "symptomQuery";
+  } else if (knowledgeKeywords.test(input)) {
+    return "knowledgeQuery";
+  } else {
+    return "ambiguousQuery"; // Fallback for unclear queries
+  }
+};
+
 // Helper function to generate a prompt based on query type
-const generatePrompt = (type, context) => {
+const generatePrompt = (type, context, userProfile) => {
+  const profileContext = userProfile
+    ? `The user's health profile is: "${userProfile}". `
+    : "";
+
   switch (type) {
     case "knowledgeQuery":
-      return `The user asked: "${context}". Provide a detailed, structured, and accurate scientific explanation, ensuring the answer is comprehensive and easy to understand.`;
+      return `${profileContext}The user asked: "${context}". Provide a detailed, structured, and accurate scientific explanation. Ensure the response is comprehensive and easy to understand.`;
     case "symptomQuery":
-      return `The user described their symptoms as: "${context}". Provide actionable, simple, and friendly advice, such as first aid measures or lifestyle tips. If needed, recommend consulting a healthcare professional.`;
-    case "personalInfo":
-      return `The user provided the following health profile: "${context}". Use this information to tailor responses to their specific health needs.`;
+      return `${profileContext}The user described their symptoms as: "${context}". Provide actionable, simple, and friendly advice, such as first aid measures or lifestyle tips. If needed, recommend consulting a healthcare professional.`;
     default:
-      return "Invalid query type.";
+      return `${profileContext}The input is: "${context}". Please respond appropriately.`;
   }
 };
 
@@ -46,32 +65,38 @@ let messages = [systemMessage];
 
 // Endpoint to prepare user profile data
 app.post("/api/prepare-data", (req, res) => {
-  const { personalInfo } = req.body;
+  const { personalInfo: newPersonalInfo } = req.body;
 
-  const personalPrompt = generatePrompt("personalInfo", personalInfo);
-  messages = [
-    systemMessage, // Retain the system message
-    { role: "user", content: personalPrompt }, // Add user profile context
-  ];
+  if (!newPersonalInfo) {
+    return res.status(400).json({ error: "Personal information is required." });
+  }
 
-  console.log("User profile updated:", messages);
+  // Update personalInfo
+  personalInfo = newPersonalInfo;
+
+  console.log("User profile updated:", personalInfo);
   res.status(200).json({ message: "User profile prepared successfully." });
 });
 
 // Endpoint to handle user queries
 app.post("/api/query", async (req, res) => {
-  const { queryType, input } = req.body;
+  const { input } = req.body;
 
-  if (!queryType || !input) {
-    return res.status(400).json({ error: "Query type and input are required." });
+  if (!input) {
+    return res.status(400).json({ error: "Input is required." });
   }
 
   try {
-    const prompt = generatePrompt(queryType, input);
+    // Automatically classify the query type
+    const queryType = classifyQueryType(input);
+
+    // Generate the appropriate prompt
+    const prompt = generatePrompt(queryType, input, personalInfo);
     messages.push({ role: "user", content: prompt });
 
+    // Call OpenAI API
     const completion = await openai.chat.completions.create({
-      model: "openbiollm-llama3-8b", // Replace with the actual model you are using
+      model: "openbiollm-llama3-8b", // Replace with the actual model
       stream: true,
       messages: messages,
     });
@@ -86,7 +111,7 @@ app.post("/api/query", async (req, res) => {
       const content = chunk.choices[0].delta.content || "";
       responseBuffer += content;
 
-      res.write(content); // Stream content to client in real-time
+      res.write(content); // Stream content to the client
     }
 
     res.end();

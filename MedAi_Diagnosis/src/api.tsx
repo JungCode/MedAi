@@ -1,7 +1,5 @@
-import axios from "axios";
-
 export const getDoctorAdvice = async (
-  symptoms: string,
+  input: string, // Changed from `symptoms` to generic `input`
   setConversation: React.Dispatch<
     React.SetStateAction<{ message: string; sender: string }[]>
   >
@@ -10,6 +8,7 @@ export const getDoctorAdvice = async (
     ...prevConversation,
     { message: "", sender: "AI" },
   ]);
+
   try {
     const response = await fetch("http://localhost:5000/api/query", {
       method: "POST",
@@ -17,8 +16,7 @@ export const getDoctorAdvice = async (
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        queryType: "symptomQuery", // Thêm loại truy vấn
-        input: symptoms, // Đặt triệu chứng làm nội dung truy vấn
+        input, // User input passed directly
       }),
     });
 
@@ -44,14 +42,17 @@ export const getDoctorAdvice = async (
   }
 };
 
-export const prepareData = async (
-  personalInfo: string ) => {
-  try{
-    axios.post('http://localhost:5000/api/prepare-data', {
-      personalInfo
-    })
-  }catch (error) {
-    console.error("Error preparing data:", error);
-    throw new Error("An error occurred while preparing data.");
-  };
-}
+export const prepareUserProfile = async (personalInfo: string) => {
+  try {
+    await fetch("http://localhost:5000/api/prepare-data", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ personalInfo }),
+    });
+  } catch (error) {
+    console.error("Error preparing user profile:", error);
+    throw new Error("Failed to prepare user profile.");
+  }
+};
